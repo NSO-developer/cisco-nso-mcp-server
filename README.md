@@ -62,26 +62,29 @@ You can configure the server using command-line arguments or environment variabl
 ### NSO Connection Parameters
 
 | Command-line Argument | Environment Variable | Default | Description |
-|----------------------|---------------------|---------|-------------|
-| `--nso-scheme`       | `NSO_SCHEME`        | http    | NSO connection scheme (http/https) |
+|----------------------|---------------------|-----------|-------------|
+| `--nso-scheme`       | `NSO_SCHEME`        | http      | NSO connection scheme (http/https) |
 | `--nso-address`      | `NSO_ADDRESS`       | localhost | NSO server address |
-| `--nso-port`         | `NSO_PORT`          | 8080    | NSO server port |
-| `--nso-timeout`      | `NSO_TIMEOUT`       | 10      | Connection timeout in seconds |
-| `--nso-username`     | `NSO_USERNAME`      | admin   | NSO username |
-| `--nso-password`     | `NSO_PASSWORD`      | admin   | NSO password |
+| `--nso-port`         | `NSO_PORT`          | 8080      | NSO server port |
+| `--nso-timeout`      | `NSO_TIMEOUT`       | 10        | Connection timeout in seconds |
+| `--nso-username`     | `NSO_USERNAME`      | admin     | NSO username |
+| `--nso-password`     | `NSO_PASSWORD`      | admin     | NSO password |
+| `--nso-verify`       | `NSO_VERIFY`        | True      | Verify NSO HTTPS certificate (default: True). Use `--no-nso-verify` for self-signed certs (dev only).      |
+| `--nso-ca-bundle`    | `NSO_CA_BUNDLE`     | None      | Path to a CA bundle file to trust for NSO HTTPS. Applicable when `-nso-verify` is `True`. |
 
 ### MCP Server Parameters
 
 | Command-line Argument | Environment Variable | Default | Description |
 |----------------------|---------------------|---------|-------------|
-| `--transport`        | `MCP_TRANSPORT`     | stdio   | MCP transport type (stdio/sse) |
+| `--transport`        | `MCP_TRANSPORT`     | stdio   | MCP transport type (stdio/http) |
 
-### SSE Transport Options (only used when --transport=sse) (IN DEVELOPMENT)
+### HTTP Transport Options (only used when --transport=http)
+```FastMCP HTTP Server reference: https://gofastmcp.com/deployment/http#http-deployment```
 
 | Command-line Argument | Environment Variable | Default | Description |
 |----------------------|---------------------|---------|-------------|
-| `--host`             | `MCP_HOST`          | 0.0.0.0 | Host to bind to when using SSE transport |
-| `--port`             | `MCP_PORT`          | 8000    | Port to bind to when using SSE transport |
+| `--host`             | `MCP_HOST`          | 0.0.0.0 | Host to bind to when using HTTP transport |
+| `--port`             | `MCP_PORT`          | 8000    | Port to bind to when using HTTP transport |
 
 ### Logging Configuration
 
@@ -169,7 +172,7 @@ While the server is typically used with an [MCP client](#connecting-to-the-serve
 cisco-nso-mcp-server
 
 # Run with custom NSO connection parameters
-cisco-nso-mcp-server --nso-address 192.168.1.100 --nso-port 8888 --nso-username myuser --nso-password mypass
+cisco-nso-mcp-server --nso-scheme=http --nso-address=127.0.0.1 --nso-port=8080 --nso-username=admin --nso-password=admin
 ```
 
 When running as a standalone process with stdio transport, you'll need to pipe input/output to the process or use it with an MCP client that supports stdio transport.

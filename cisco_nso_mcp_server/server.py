@@ -376,11 +376,11 @@ def parse_args() -> argparse.Namespace:
 
     MCP Server Options:
         --transport: MCP transport type (default: stdio)
-            Choices: stdio, sse
+            Choices: stdio, http
 
-    SSE Transport Options (only used when --transport=sse):
-        --host: Host to bind to when using SSE transport (default: 0.0.0.0)
-        --port: Port to bind to when using SSE transport (default: 8000)
+    HTTP Transport Options (only used when --transport=http):
+        --host: Host to bind to when using HTTP transport (default: 0.0.0.0)
+        --port: Port to bind to when using HTTP transport (default: 8000)
 
     Returns:
         A Namespace object containing the parsed values.
@@ -389,36 +389,74 @@ def parse_args() -> argparse.Namespace:
     
     # NSO connection parameters
     nso_group = parser.add_argument_group('NSO Connection Options')
-    nso_group.add_argument("--nso-scheme", default=os.environ.get("NSO_SCHEME", "http"),
-                        help="NSO connection scheme (default: http)")
-    nso_group.add_argument("--nso-address", default=os.environ.get("NSO_ADDRESS", "localhost"),
-                        help="NSO server address (default: localhost)")
-    nso_group.add_argument("--nso-port", type=int, default=int(os.environ.get("NSO_PORT", "8080")),
-                        help="NSO server port (default: 8080)")
-    nso_group.add_argument("--nso-timeout", type=int, default=int(os.environ.get("NSO_TIMEOUT", "10")),
-                        help="NSO connection timeout in seconds (default: 10)")
-    nso_group.add_argument("--nso-username", default=os.environ.get("NSO_USERNAME", "admin"),
-                        help="NSO username (default: admin)")
-    nso_group.add_argument("--nso-password", default=os.environ.get("NSO_PASSWORD", "admin"),
-                        help="NSO password (default: admin)")
+    nso_group.add_argument(
+        "--nso-scheme",
+        default=os.environ.get("NSO_SCHEME", "http"),
+        help="NSO connection scheme (default: http)"
+    )
+    nso_group.add_argument(
+        "--nso-address",
+        default=os.environ.get("NSO_ADDRESS", "localhost"),
+        help="NSO server address (default: localhost)"
+    )
+    nso_group.add_argument(
+        "--nso-port",
+        type=int,
+        default=int(os.environ.get("NSO_PORT", "8080")),
+        help="NSO server port (default: 8080)"
+    )
+    nso_group.add_argument(
+        "--nso-timeout",
+        type=int,
+        default=int(os.environ.get("NSO_TIMEOUT", "10")),
+        help="NSO connection timeout in seconds (default: 10)"
+    )
+    nso_group.add_argument(
+        "--nso-username",
+        default=os.environ.get("NSO_USERNAME", "admin"),
+        help="NSO username (default: admin)"
+    )
+    nso_group.add_argument(
+        "--nso-password",
+        default=os.environ.get("NSO_PASSWORD", "admin"),
+        help="NSO password (default: admin)"
+    )
+    nso_group.add_argument(
+        "--nso-verify",
+        default=os.environ.get("NSO_VERIFY", True),
+        action=argparse.BooleanOptionalAction,
+        help="Verify NSO HTTPS certificate (default: True). Use --no-nso-verify for self-signed certs (dev only).",
+    )
+    nso_group.add_argument(
+        "--nso-ca-bundle",
+        default=os.environ.get("NSO_CA_BUNDLE"),
+        help="Path to a CA bundle file to trust for NSO HTTPS.",
+    )
     
     # MCP server parameters
     mcp_group = parser.add_argument_group('MCP Server Options')
-    mcp_group.add_argument("--transport", default=os.environ.get("MCP_TRANSPORT", "stdio"),
-                        choices=["stdio", "sse"], help="MCP transport type (default: stdio)")
+    mcp_group.add_argument(
+        "--transport",
+        default=os.environ.get("MCP_TRANSPORT", "stdio"),
+        choices=["stdio", "http"],
+        help="MCP transport type (default: stdio)"
+    )
     
-    # SSE-specific parameters
-    sse_group = parser.add_argument_group('SSE Transport Options (only used when --transport=sse)')
-    sse_group.add_argument("--host", default=os.environ.get("MCP_HOST", "0.0.0.0"),
-                        help="Host to bind to when using SSE transport (default: 0.0.0.0)")
-    sse_group.add_argument("--port", type=int, default=int(os.environ.get("MCP_PORT", "8000")),
-                        help="Port to bind to when using SSE transport (default: 8000)")
+    # HTTP-specific parameters
+    http_group = parser.add_argument_group('HTTP Transport Options (only used when --transport=http)')
+    http_group.add_argument(
+        "--host",
+        default=os.environ.get("MCP_HOST", "0.0.0.0"),
+        help="Host to bind to when using HTTP transport (default: 0.0.0.0)"
+    )
+    http_group.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("MCP_PORT", "8000")),
+        help="Port to bind to when using HTTP transport (default: 8000)"
+    )
     
     args = parser.parse_args()
-    
-    # validate that host and port are provided if using SSE transport
-    if args.transport == "sse" and (not args.host or not args.port):
-        parser.error("--host and --port are required when using --transport=sse")
     
     return args
 
@@ -432,7 +470,7 @@ def main():
     
     # initialize FastMCP server
     mcp = FastMCP(name="nso-mcp")
-    
+
     # initialize NSO client with configurable parameters
     client = NSORestconfClient(
         scheme=args.nso_scheme,
@@ -441,7 +479,17 @@ def main():
         timeout=args.nso_timeout,
         username=args.nso_username,
         password=args.nso_password,
+        disable_warning=(getattr(args, "nso_scheme", "http") == "https" and not getattr(args, "nso_verify", True)),
     )
+
+    # cisco-nso-restconf uses requests.Session internally. Configure TLS verification
+    # at the session layer so --no-nso-verify actually disables cert checks.
+    if getattr(args, "nso_scheme", "http") == "https":
+        if getattr(args, "nso_ca_bundle", None):
+            client.session.verify = args.nso_ca_bundle
+        else:
+            client.session.verify = getattr(args, "nso_verify", True)
+
     logger.info("NSORestconfClient initialized")
 
     # initialize NSO client helpers
@@ -455,12 +503,12 @@ def main():
     # run the server with stdio transport
     if args.transport == "stdio":
         logger.info("🚀 Starting Model Context Protocol (MCP) NSO Server with stdio transport")
-        mcp.run(transport='stdio')
+        mcp.run(transport="stdio")
     
-    # run the server with SSE transport
-    elif args.transport == "sse":
-        logger.info(f"🚀 Starting Model Context Protocol (MCP) NSO Server with SSE transport on {args.host}:{args.port}")
-        mcp.run(transport='sse', host=args.host, port=args.port)
+    # run the server with HTTP transport
+    elif args.transport == "http":
+        logger.info(f"🚀 Starting Model Context Protocol (MCP) NSO Server with HTTP transport on {args.host}:{args.port}")
+        mcp.run(transport="http", host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 [project]
 name = "cisco-nso-mcp-server"
-version = "2.4.1"
+version = "3.0.0"
 license = "MIT"
 description = "Cisco NSO MCP Server"
 readme = "README.md"
@@ -10,9 +10,9 @@ authors = [
 requires-python = ">=3.12,<4.0"
 dependencies = [
     "cisco-nso-restconf>=1.0.5",
-    "fastmcp>=2.10.6",
+    "fastmcp>=2.14.1",
     "httpx>=0.28.1",
-    "python-dotenv>=1.1.0",
+    "python-dotenv>=1.2.1",
 ]
 
 [project.urls]
