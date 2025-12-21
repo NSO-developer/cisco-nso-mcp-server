@@ -27,16 +27,17 @@ from cisco_nso_restconf.client import NSORestconfClient
 from cisco_nso_restconf.devices import Devices
 from cisco_nso_restconf.query import Query
 from fastmcp import FastMCP
+from starlette.responses import JSONResponse
 
 
 def register_resources(mcp: FastMCP, devices_helper: Devices, query_helper: Query) -> None:
     """
     Register resources with the MCP server.
-    
+
     This function registers all available resources with the MCP server,
     including the NSO environment summary resource that provides information
     about the network devices managed by NSO.
-    
+
     Args:
         mcp: The FastMCP server instance to register resources with
         query_helper: The Query helper for interacting with NSO
@@ -60,7 +61,7 @@ def register_resources(mcp: FastMCP, devices_helper: Devices, query_helper: Quer
         try:
             # delegate to the service layer
             return await get_environment_summary(query_helper, devices_helper)
-            
+
         except Exception as e:
             logger.error(f"Resource error: {str(e)}")
 
@@ -72,11 +73,11 @@ def register_resources(mcp: FastMCP, devices_helper: Devices, query_helper: Quer
 def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devices) -> None:
     """
     Register tools with the MCP server.
-    
+
     This function registers all available tools with the MCP server,
     including tools for retrieving device platform information, device configuration,
     Network Element Driver (NED) IDs, and services from Cisco NSO.
-    
+
     Args:
         mcp: The FastMCP server instance to register tools with
         client: The NSORestconfClient instance for interacting with NSO
@@ -93,7 +94,7 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
     )
     async def get_service_types_tool(params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        This tool retrieves the available service types in Cisco NSO. 
+        This tool retrieves the available service types in Cisco NSO.
         The response will include a list of available service types.
 
         Args:
@@ -105,13 +106,13 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
         try:
             # delegate to the service layer
             return await get_service_types(client)
-                
+
         except Exception as e:
             return {
                 "status": "error",
                 "error_message": str(e)
             }
-    
+
     @mcp.tool(
         name="get_services",
         description="Retrieve the available services in Cisco NSO. Requires a 'service_type' parameter.",
@@ -123,7 +124,7 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
     )
     async def get_services_tool(params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        This tool retrieves the available services in Cisco NSO. 
+        This tool retrieves the available services in Cisco NSO.
         The response will include a list of available services.
 
         Args:
@@ -142,7 +143,7 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
 
             # delegate to the service layer
             return await get_services(client, params["service_type"])
-                
+
         except Exception as e:
             return {
                 "status": "error",
@@ -180,16 +181,16 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
                     "status": "error",
                     "error_message": "Missing required parameter: device_name"
                 }
-            
+
             # delegate to the service layer
             return await get_device_platform(devices_helper, params["device_name"])
-                
+
         except Exception as e:
             return {
                 "status": "error",
                 "error_message": str(e)
             }
-    
+
     @mcp.tool(
         name="get_device_config",
         description="Retrieve the full configuration for a specific device in Cisco NSO. Requires a 'device_name' parameter.",
@@ -207,16 +208,16 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
                     "status": "error",
                     "error_message": "Missing required parameter: device_name"
                 }
-            
+
             # delegate to the service layer
             return await get_device_config(devices_helper, params["device_name"])
-                
+
         except Exception as e:
             return {
                 "status": "error",
                 "error_message": str(e)
             }
-    
+
     @mcp.tool(
         name="get_device_state",
         description="Retrieve the state for a specific device in Cisco NSO. Requires a 'device_name' parameter.",
@@ -234,16 +235,16 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
                     "status": "error",
                     "error_message": "Missing required parameter: device_name"
                 }
-            
+
             # delegate to the service layer
             return await get_device_state(devices_helper, params["device_name"])
-                
+
         except Exception as e:
             return {
                 "status": "error",
                 "error_message": str(e)
             }
-    
+
     @mcp.tool(
         name="get_device_groups",
         description="Retrieve the available device groups in Cisco NSO.",
@@ -266,13 +267,13 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
         try:
             # delegate to the service layer
             return await get_device_groups(devices_helper)
-                
+
         except Exception as e:
             return {
                 "status": "error",
                 "error_message": str(e)
             }
-    
+
     @mcp.tool(
         name="get_device_ned_ids",
         description="Retrieve the available Network Element Driver (NED) IDs in Cisco NSO.",
@@ -296,7 +297,7 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
         try:
             # delegate to the service layer
             return await get_device_ned_ids(devices_helper)
-                
+
         except Exception as e:
             return {
                 "status": "error",
@@ -320,10 +321,10 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
                     "status": "error",
                     "error_message": "Missing required parameter: device_name"
                 }
-            
+
             # delegate to the service layer
             return await check_device_sync(devices_helper, params["device_name"])
-                
+
         except Exception as e:
             return {
                 "status": "error",
@@ -347,10 +348,10 @@ def register_tools(mcp: FastMCP, client: NSORestconfClient, devices_helper: Devi
                     "status": "error",
                     "error_message": "Missing required parameter: device_name"
                 }
-            
+
             # delegate to the service layer
             return await sync_from_device(devices_helper, params["device_name"])
-                
+
         except Exception as e:
             return {
                 "status": "error",
@@ -386,7 +387,7 @@ def parse_args() -> argparse.Namespace:
         A Namespace object containing the parsed values.
     """
     parser = argparse.ArgumentParser(description="Cisco NSO MCP Server")
-    
+
     # NSO connection parameters
     nso_group = parser.add_argument_group('NSO Connection Options')
     nso_group.add_argument(
@@ -432,7 +433,7 @@ def parse_args() -> argparse.Namespace:
         default=os.environ.get("NSO_CA_BUNDLE"),
         help="Path to a CA bundle file to trust for NSO HTTPS.",
     )
-    
+
     # MCP server parameters
     mcp_group = parser.add_argument_group('MCP Server Options')
     mcp_group.add_argument(
@@ -441,7 +442,7 @@ def parse_args() -> argparse.Namespace:
         choices=["stdio", "http"],
         help="MCP transport type (default: stdio)"
     )
-    
+
     # HTTP-specific parameters
     http_group = parser.add_argument_group('HTTP Transport Options (only used when --transport=http)')
     http_group.add_argument(
@@ -455,9 +456,9 @@ def parse_args() -> argparse.Namespace:
         default=int(os.environ.get("MCP_PORT", "8000")),
         help="Port to bind to when using HTTP transport (default: 8000)"
     )
-    
+
     args = parser.parse_args()
-    
+
     return args
 
 def main():
@@ -467,7 +468,7 @@ def main():
 
     # parse command line arguments
     args = parse_args()
-    
+
     # initialize FastMCP server
     mcp = FastMCP(name="nso-mcp")
 
@@ -496,6 +497,11 @@ def main():
     devices_helper = Devices(client) # devices helper
     query_helper = Query(client) # query helper
 
+	# implement health check endpoint (http://<ip:<port>/health)
+    @mcp.custom_route("/health", methods=["GET"])
+    async def health_check(request):
+        return JSONResponse({"status": "healthy", "service": "mcp-server"})
+
     # register resources and tools
     register_resources(mcp, devices_helper, query_helper) # register resources
     register_tools(mcp, client, devices_helper) # register tools
@@ -504,7 +510,7 @@ def main():
     if args.transport == "stdio":
         logger.info("🚀 Starting Model Context Protocol (MCP) NSO Server with stdio transport")
         mcp.run(transport="stdio")
-    
+
     # run the server with HTTP transport
     elif args.transport == "http":
         logger.info(f"🚀 Starting Model Context Protocol (MCP) NSO Server with HTTP transport on {args.host}:{args.port}")
